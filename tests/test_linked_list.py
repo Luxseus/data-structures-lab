@@ -125,3 +125,63 @@ def test_random_operations_match_list():
             lst[i] = x
             ref[i] = x
         assert list(lst) == ref
+
+
+def test_tail_stays_correct_after_operations():
+    # Tail bookkeeping is the classic bug source for a singly linked list:
+    # every path is checked through an append at the very end.
+    lst = LinkedList([1, 2, 3])
+    lst.pop()
+    lst.append(4)
+    assert list(lst) == [1, 2, 4]
+    lst.pop(0)
+    lst.append(5)
+    assert list(lst) == [2, 4, 5]
+    lst.reverse()
+    lst.append(6)
+    assert list(lst) == [5, 4, 2, 6]
+    lst.clear()
+    lst.append(7)
+    assert list(lst) == [7]
+    assert lst.pop() == 7
+    assert len(lst) == 0
+
+
+def test_getitem_setitem_out_of_range():
+    lst = LinkedList([1, 2])
+    for bad in (2, -3, 100):
+        with pytest.raises(IndexError):
+            lst[bad]
+        with pytest.raises(IndexError):
+            lst.pop(bad)
+
+
+def test_insert_bounds_match_list_semantics():
+    lst = LinkedList([1, 2, 3])
+    with pytest.raises(IndexError):
+        lst.insert(-1, 0)
+    lst.insert(3, 4)
+    assert list(lst) == [1, 2, 3, 4]
+
+
+def test_truthiness():
+    assert not LinkedList()
+    assert LinkedList([0])
+
+
+def test_index_returns_first_occurrence():
+    lst = LinkedList([1, 2, 2, 3])
+    assert lst.index(2) == 1
+
+
+def test_iteration_while_appending_terminates():
+    # Appending during iteration must not loop forever: the walker follows
+    # ``next`` pointers, so new nodes are simply visited too.
+    lst = LinkedList(range(5))
+    count = 0
+    for _ in lst:
+        count += 1
+        if count <= 5:
+            lst.append(None)
+    assert count == 10
+
