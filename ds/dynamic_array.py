@@ -16,8 +16,12 @@ class DynamicArray:
         return self._size
 
     def __iter__(self):
-        for i in range(self._size):
-            yield self._data[i]
+        # snapshot the length so shrinking during iteration cannot index past a resized buffer
+        index = 0
+        size = self._size
+        while index < size and index < self._size:
+            yield self._data[index]
+            index += 1
 
     def __contains__(self, value):
         return any(item == value for item in self)
