@@ -93,3 +93,61 @@ def test_matches_collections_deque():
             assert mine[i] == ref[i]
         assert len(mine) == len(ref)
     assert list(mine) == list(ref)
+
+
+def test_wraparound_last_index_and_pop():
+    # Regression for ring-buffer indexing: after the head wraps past the end
+    # of the backing list, negative and last indices must still resolve.
+    d = Deque()
+    for i in range(30):
+        d.append(i)
+    for _ in range(25):
+        d.popleft()
+    for i in range(30, 40):
+        d.append(i)
+    assert len(d) == 15
+    assert list(d) == list(range(25, 40))
+    assert d[-1] == 39
+    assert d.peek() == 39
+    assert d.pop() == 39
+    assert list(d) == list(range(25, 39))
+
+
+def test_pop_all_then_reuse():
+    d = Deque(range(10))
+    while d:
+        d.popleft()
+    assert len(d) == 0
+    for i in range(20):
+        d.append(i)
+    assert list(d) == list(range(20))
+
+
+def test_getitem_out_of_range():
+    d = Deque([1, 2, 3])
+    for bad in (3, -4, 100):
+        with pytest.raises(IndexError):
+            d[bad]
+
+
+def test_truthiness():
+    assert not Deque()
+    assert Deque([0])
+
+
+def test_reverse_and_duplicates_containment():
+    d = Deque([1, 1, 2])
+    assert list(reversed(list(d))) == [2, 1, 1]
+    assert 1 in d
+    d[-1] = 3
+    assert list(d) == [1, 1, 3]
+
+
+def test_equality_with_other_iterables():
+    d = Deque([1, 2])
+    assert d == Deque([1, 2])
+    assert d == [1, 2]
+    assert d == (1, 2)
+    assert d != [2, 1]
+    assert (d == "12") is False
+
