@@ -73,7 +73,12 @@ class AVLTree:
             node = node.right
 
     def __contains__(self, key):
-        return self._find(key) is not None
+        # `in` on a set-like container returns False for incomparable keys
+        # instead of blowing up with TypeError.
+        try:
+            return self._find(key) is not None
+        except TypeError:
+            return False
 
     def __repr__(self):
         return f"AVLTree({list(self)!r})"
