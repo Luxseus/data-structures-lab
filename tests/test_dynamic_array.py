@@ -115,3 +115,64 @@ def test_random_operations_match_list():
             arr[i] = x
             ref[i] = x
         assert list(arr) == ref
+
+
+def test_iterating_while_shrinking_does_not_crash():
+    # Regression: the iterator used to read ``range(self._size)`` once, so
+    # popping inside the loop indexed past a buffer that had just been resized.
+    arr = DynamicArray(range(20))
+    seen = []
+    for value in arr:
+        seen.append(value)
+        arr.pop()
+    assert seen == list(range(len(seen)))
+    assert len(seen) >= 10
+
+
+def test_append_after_shrink_keeps_data():
+    arr = DynamicArray(range(16))
+    while len(arr) > 2:
+        arr.pop()
+    arr.append(100)
+    assert list(arr) == [0, 1, 100]
+
+
+def test_shrink_stops_at_min_capacity():
+    arr = DynamicArray(range(64))
+    while len(arr) > 1:
+        arr.pop()
+    assert arr.capacity >= DynamicArray.MIN_CAPACITY
+    assert arr.capacity < 64
+
+
+def test_append_pop_cycles_keep_capacity_stable():
+    arr = DynamicArray(range(40))
+    capacity = arr.capacity
+    for _ in range(40):
+        arr.append(None)
+        arr.pop()
+    assert arr.capacity == capacity
+    assert list(arr) == list(range(40))
+
+
+def test_truthiness_and_contains():
+    assert not DynamicArray()
+    assert DynamicArray([0])
+    assert 0 in DynamicArray([0])
+    assert 1 not in DynamicArray([0])
+
+
+def test_insert_and_pop_negative_index_match_list():
+    arr, ref = DynamicArray([1, 2, 3]), [1, 2, 3]
+    with pytest.raises(IndexError):
+        arr.insert(-1, 0)
+    assert arr.pop(-1) == ref.pop(-1) == 3
+    assert list(arr) == ref
+
+
+def test_clear_releases_references():
+    marker = object()
+    arr = DynamicArray([marker])
+    arr.clear()
+    assert marker not in list(arr)
+
