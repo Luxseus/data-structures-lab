@@ -22,43 +22,47 @@ def bubble_sort(iterable, key=None, reverse=False):
 
 
 def quick_sort(iterable, key=None, reverse=False):
+    """Quicksort with a median-of-three pivot; returns a new list.
+
+    Elements are grouped by key into "less", "equal" and "greater" buckets
+    (three-way partition). The pivot is chosen without reordering anything and
+    equal keys keep their original relative order, so the result is stable
+    like ``sorted()``.
+    """
     items = list(iterable)
+    if not items:
+        return items
     key = key or _identity
     keys = [key(item) for item in items]
     less = _less(reverse)
 
-    def swap(i, j):
-        items[i], items[j] = items[j], items[i]
-        keys[i], keys[j] = keys[j], keys[i]
+    def median_of_three(order, lo, hi):
+        a, b, c = order[lo], order[(lo + hi) // 2], order[hi]
+        if less(keys[b], keys[a]):
+            a, b = b, a
+        if less(keys[c], keys[b]):
+            b, c = c, b
+        if less(keys[b], keys[a]):
+            a, b = b, a
+        return b
 
-    def partition(lo, hi):
-        mid = (lo + hi) // 2
-        if less(keys[mid], keys[lo]):
-            swap(mid, lo)
-        if less(keys[hi], keys[lo]):
-            swap(hi, lo)
-        if less(keys[hi], keys[mid]):
-            swap(hi, mid)
-        swap(mid, hi)
-        pivot = keys[hi]
-        i = lo
-        for j in range(lo, hi):
-            if less(keys[j], pivot):
-                swap(i, j)
-                i += 1
-        swap(i, hi)
-        return i
-
-    def sort(lo, hi):
-        while lo < hi:
-            pivot = partition(lo, hi)
-            if pivot - lo < hi - pivot:
-                sort(lo, pivot - 1)
-                lo = pivot + 1
+    def three_way_partition(indices):
+        pivot = keys[median_of_three(indices, 0, len(indices) - 1)]
+        lower, equal, higher = [], [], []
+        for index in indices:
+            if less(keys[index], pivot):
+                lower.append(index)
+            elif less(pivot, keys[index]):
+                higher.append(index)
             else:
-                sort(pivot + 1, hi)
-                hi = pivot - 1
+                equal.append(index)
+        return lower, equal, higher
 
-    if items:
-        sort(0, len(items) - 1)
-    return items
+    def sort(indices):
+        if len(indices) < 2:
+            return indices
+        lower, equal, higher = three_way_partition(indices)
+        return sort(lower) + equal + sort(higher)
+
+    order = sort(list(range(len(items))))
+    return [items[i] for i in order]
