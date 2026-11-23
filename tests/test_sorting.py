@@ -61,3 +61,44 @@ def test_quick_sort_large_input():
     assert quick_sort(data) == data
     assert quick_sort(data[::-1]) == data
     assert quick_sort([5] * 5000) == [5] * 5000
+
+
+@pytest.mark.parametrize("sort", SORTS)
+def test_reverse_key_and_reverse_stability(sort):
+    # Regression: quick_sort used to swap equal keys when reverse=True.
+    data = [("a", 1), ("b", 0), ("c", 0), ("d", 1)]
+    expected = [("b", 0), ("c", 0), ("a", 1), ("d", 1)]
+    assert sort(data, key=lambda pair: pair[1]) == expected
+    expected_reverse = [("a", 1), ("d", 1), ("b", 0), ("c", 0)]
+    assert sort(data, key=lambda pair: pair[1], reverse=True) == expected_reverse
+
+
+@pytest.mark.parametrize("sort", SORTS)
+def test_matches_sorted_for_random_keyed_data(sort):
+    rng = random.Random(3)
+    for _ in range(20):
+        data = [(rng.randrange(5), rng.random()) for _ in range(rng.randrange(0, 40))]
+        for reverse in (False, True):
+            assert sort(data, key=lambda p: p[0], reverse=reverse) == sorted(
+                data, key=lambda p: p[0], reverse=reverse
+            )
+
+
+@pytest.mark.parametrize("sort", SORTS)
+def test_stability_on_equal_keys(sort):
+    data = [(1, "a"), (1, "b"), (0, "c"), (1, "d")]
+    assert sort(data, key=lambda p: p[0]) == [(0, "c"), (1, "a"), (1, "b"), (1, "d")]
+
+
+@pytest.mark.parametrize("sort", SORTS)
+def test_returns_new_list(sort):
+    data = [3, 1, 2]
+    result = sort(data)
+    assert isinstance(result, list)
+    assert result is not data
+
+
+def test_bubble_sort_integer_and_none_key():
+    assert bubble_sort([2, 1], key=None) == [1, 2]
+    assert quick_sort([2, 1], key=None) == [1, 2]
+
