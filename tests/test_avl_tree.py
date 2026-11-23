@@ -119,3 +119,67 @@ def test_clear_and_repr():
     t.clear()
     assert len(t) == 0
     assert list(t) == []
+    assert t.height() == 0
+
+
+def test_contains_with_incomparable_key_returns_false():
+    # Unlike a dict, a sorted container should answer "no" instead of
+    # raising TypeError when the probe key has a different type.
+    t = AVLTree([1, 2, 3])
+    assert "1" not in t
+    assert None not in t
+    assert [1] not in t
+    assert 2 in t
+
+
+def test_size_after_failed_delete_is_unchanged():
+    t = AVLTree(range(5))
+    with pytest.raises(KeyError):
+        t.delete(99)
+    assert len(t) == 5
+    check_invariants(t)
+
+
+def test_delete_leaf_node_with_one_child():
+    # Root 2 has children 1 and 3; deletion exercises the one-child branch.
+    t = AVLTree([2, 1, 3])
+    t.delete(1)
+    assert list(t) == [2, 3]
+    assert t.height() == 2
+    check_invariants(t)
+
+
+def test_delete_keeps_order_for_many_shapes():
+    rng = random.Random(11)
+    for _ in range(50):
+        keys = rng.sample(range(100), rng.randint(0, 30))
+        t = AVLTree(keys)
+        removed = rng.sample(keys, len(keys) // 2) if keys else []
+        for key in removed:
+            t.delete(key)
+        expected = sorted(set(keys) - set(removed))
+        assert list(t) == expected
+        assert len(t) == len(expected)
+        check_invariants(t)
+
+
+def test_height_is_logarithmic_for_sorted_range():
+    n = 4095
+    t = AVLTree(range(n))
+    check_invariants(t)
+    assert t.height() <= 2.01 * (n + 1).bit_length()
+
+
+def test_min_max_on_single_and_empty_after_clear():
+    t = AVLTree([7])
+    assert t.min() == t.max() == 7
+    t.clear()
+    with pytest.raises(ValueError):
+        t.min()
+    with pytest.raises(ValueError):
+        t.max()
+
+
+def test_repr_of_empty_tree():
+    assert repr(AVLTree()) == "AVLTree([])"
+
